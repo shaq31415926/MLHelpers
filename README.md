@@ -3,11 +3,11 @@
 This repo contains helper functions for experimenting with machine learning models in jupyter notebooks.
 
 1. Features
->> dummy_var
+>> dummy_var.py
 
 One hot encodes categorical variables.
 
->> FeatureSelector
+>> FeatureSelector.py
 
 Class for performing feature selection for machine learning models or data preprocessing.
 
@@ -19,7 +19,7 @@ Implements four different methods to identify features for removal:
 * Identifies features with the weakest relationship with the target variable
 
 2. Models
->> MLPipepline
+>> MLPipepline.py
 
    Class for evaluating machine learning model, and outputs the following:
  * Confusion matrix
