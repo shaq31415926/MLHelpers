@@ -30,6 +30,6 @@ Implements four different methods to identify features for removal:
  * Feature Importance
  * Precision Recall Curves
  
- ### How to use the repo
+ ### How to use the code
  
  Clone repo and import classes.
