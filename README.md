@@ -1,4 +1,6 @@
-# MLHelpers
+## Repo Name: MLHelpers
+
+### Summary of code in repo
 
 This repo contains helper functions for experimenting with machine learning models in jupyter notebooks.
 
@@ -27,3 +29,7 @@ Implements four different methods to identify features for removal:
  * Model evaluation metrics
  * Feature Importance
  * Precision Recall Curves
+ 
+ ### How to use the repo
+ 
+ Clone repo and import classes.
