@@ -11,7 +11,7 @@ One hot encodes categorical variables.
 
 Class for performing feature selection for machine learning models or data preprocessing.
 
-Implements four different methods to identify features for removal
+Implements four different methods to identify features for removal:
 
 * Identifies features with a missing percentage greater than a specified threshold
 * Identifies features with a single unique value
@@ -21,12 +21,9 @@ Implements four different methods to identify features for removal
 2. Models
 >> MLPipepline
 
-   Class for performing feature selection based on a specific model.
-   
-   Outputs the following:
-   *Confusion matrix
-   *Learning curves
-   *Model evaluation metrics
-   *Feature Importance
-   *Precision Recall Curves
-    """
+   Class for evaluating machine learning model, and outputs the following:
+ * Confusion matrix
+ * Learning curves
+ * Model evaluation metrics
+ * Feature Importance
+ * Precision Recall Curves
