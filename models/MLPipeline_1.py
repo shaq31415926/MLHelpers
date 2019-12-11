@@ -15,10 +15,11 @@ class MLPipeline(object):
     Class for performing feature selection based on a specific model.
 
     Outputs the following:
-        1. Plots feature importance
-        2. Identify low scoring/redundant features to drop
-        3. Plot model scores
-        4. Plot learning curves
+        1. Plots confusion matrix
+        2. Plot learning curves
+        3. Model evaluation metrics
+        4. Plots feature importance
+        5. Plot precision recall curves
     """
 
     def __init__(self, X_train,X_test, y_train, y_test, model):
