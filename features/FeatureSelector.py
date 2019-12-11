@@ -14,12 +14,14 @@ class FeatureSelector(object):
     """
     Class for performing feature selection for machine learning or data preprocessing.
 
-    Implements three different methods to identify features for removal
+    Implements four different methods to identify features for removal
 
-        1. Find columns with a missing percentage greater than a specified threshold
-        2. Find columns with a single unique value
-        3. Find collinear variables with a correlation greater than a specified
+        1. Identifies features with a missing percentage greater than a specified threshold
+        2. Identifies features with a single unique value
+        3. Identifies collinear variables with a correlation greater than a specified
         correlation coefficient
+        4. Identifies features with the weakest relationship
+        with the target variable
     """
 
     def __init__(self, data, target):
@@ -43,39 +45,40 @@ class FeatureSelector(object):
         # Calculate the fraction of missing in each column
         missing_series = self.data.isnull().sum() / self.data.shape[0]
         self.missing_stats = pd.DataFrame(
-                                missing_series).rename(
-                                        columns={'index': 'feature',
-                                                 0: 'missing_fraction'})
+            missing_series).rename(
+            columns={'index': 'feature',
+                     0: 'missing_fraction'})
         # Sort with highest number of missing values on top
         self.missing_stats = self.missing_stats.sort_values('missing_fraction', ascending=False)
         # Find the columns with a missing percentage above the threshold
         record_missing = pd.DataFrame(
-                            missing_series[missing_series > missing_threshold]).reset_index().rename(
-                                    columns={'index': 'feature',
-                                             0: 'missing_fraction'})
+            missing_series[missing_series > missing_threshold]).reset_index().rename(
+            columns={'index': 'feature',
+                     0: 'missing_fraction'})
 
         to_drop = list(record_missing['feature'])
         self.record_missing = record_missing
         self.ops['missing'] = to_drop
 
-        print('%d features with greater than %0.2f missing values.\n' % (len(self.ops['missing']), self.missing_threshold))
+        print('%d features with greater than %0.2f missing values.\n' % (
+        len(self.ops['missing']), self.missing_threshold))
 
     def identify_single_unique(self):
         """Finds features with only a single unique value. NaNs do not count as a unique value. """
         # Calculate the unique counts in each column
         unique_counts = self.data.nunique()
         self.unique_stats = pd.DataFrame(
-                            unique_counts).rename(
-                                    columns={'index': 'feature',
-                                             0: 'nunique'})
+            unique_counts).rename(
+            columns={'index': 'feature',
+                     0: 'nunique'})
 
         self.unique_stats = self.unique_stats.sort_values('nunique', ascending=True)
         # Find the columns with only one unique count
         record_single_unique = pd.DataFrame(
-                unique_counts[unique_counts == 1]).reset_index().rename(
-                                columns={
-                                        'index': 'feature',
-                                        0: 'nunique'})
+            unique_counts[unique_counts == 1]).reset_index().rename(
+            columns={
+                'index': 'feature',
+                0: 'nunique'})
 
         to_drop = list(record_single_unique['feature'])
         self.record_single_unique = record_single_unique
@@ -92,17 +95,18 @@ class FeatureSelector(object):
         self.correlation_threshold = correlation_threshold
         self.corr_matrix = self.data.corr()
         high_corr_var = np.where(self.corr_matrix.abs() > correlation_threshold)
-        high_corr_var = [(self.corr_matrix.index[x], self.corr_matrix.columns[y], round(self.corr_matrix.iloc[x, y], 2)) for x, y in zip(*high_corr_var) if x != y and x < y]
+        high_corr_var = [(self.corr_matrix.index[x], self.corr_matrix.columns[y], round(self.corr_matrix.iloc[x, y], 2))
+                         for x, y in zip(*high_corr_var) if x != y and x < y]
 
         if high_corr_var == []:
             record_collinear = pd.DataFrame()
             to_drop = []
         else:
             record_collinear = pd.DataFrame(
-                                high_corr_var).rename(
-                                        columns={0: 'corr_feature',
-                                                 1: 'drop_feature',
-                                                 2: 'corr_values'})
+                high_corr_var).rename(
+                columns={0: 'drop_feature',
+                         1: 'corr_feature',
+                         2: 'corr_values'})
 
             record_collinear = record_collinear.sort_values(by='corr_values', ascending=False)
             record_collinear = record_collinear.reset_index(drop=True)
@@ -111,16 +115,19 @@ class FeatureSelector(object):
         self.record_collinear = record_collinear
         self.ops['collinear'] = to_drop
 
-        print('%d features with a correlation magnitude greater than %0.2f.\n' % (len(self.ops['collinear']), self.correlation_threshold))
+        print('%d features with a correlation magnitude greater than %0.2f.\n' % (
+        len(self.ops['collinear']), self.correlation_threshold))
 
-    def identify_weakest_features(self, data, target, target_grouped, number_features):
+    def identify_weakest_features(self, features_to_drop):
         """
         statistical test to remove features with the weakest relationship
         with the target variable
         """
-        X = data.drop([target, 'url_id', 'avg_ranking_score', target_grouped], axis=1)
-        y = data[target]
-        # apply SelectKBest class to extract top 20 best features
+        X = self.data.drop([self.target], axis=1) # drop target
+        X = X.select_dtypes(include='bool') # keep boolean data only
+        y = self.data[self.target]
+
+        # apply chi-squared test to extract top 20 best features
         bestfeatures = SelectKBest(score_func=chi2, k=20)
         fit = bestfeatures.fit(X, y)
         df_scores = pd.DataFrame(fit.scores_)
@@ -128,24 +135,18 @@ class FeatureSelector(object):
         feature_scores = pd.concat([df_columns, df_scores], axis=1)
         feature_scores.columns = ['Features', 'Score']  # naming the dataframe columns
         feature_scores = feature_scores.sort_values(['Score'], ascending=False)  # sorting the dataframe by Score
-        # print(feature_scores.nlargest(20,'Score'))  #print the 20 best features
-        to_drop = list(feature_scores.nsmallest(number_features, 'Score')['Features'])
+        to_drop = list(feature_scores.nsmallest(features_to_drop, 'Score')['Features']) # list of features to drop
         self.feature_scores = feature_scores
         self.ops['weakest_features'] = to_drop
-        data.drop(to_drop, axis=1, inplace=True)
 
-        print(to_drop,'\n')
-        print('%d features with the lowest score with the target variable removed\n' % (len(self.ops['weakest_features'])))
-        print("new shape of data:", data.shape)
-        
-        return data
+        print('%d features with the weakest relationshp with the target variable\n' % (
+            len(self.ops['weakest_features'])))
 
-        
     def plot_unique(self):
         """Histogram of number of unique values in each feature"""
         if self.record_single_unique is None:
             raise NotImplementedError(
-                    'Unique values have not been calculated. Run `identify_single_unique`')
+                'Unique values have not been calculated. Run `identify_single_unique`')
 
         # Histogram of number of unique values
         self.unique_stats.plot.hist(edgecolor='k', figsize=(7, 5))
@@ -161,7 +162,8 @@ class FeatureSelector(object):
         # Histogram of missing values
         plt.style.use('seaborn-white')
         plt.figure(figsize=(7, 5))
-        plt.hist(self.missing_stats['missing_fraction'], bins=np.linspace(0, 1, 11), edgecolor='k', color='red', linewidth=1.5)
+        plt.hist(self.missing_stats['missing_fraction'], bins=np.linspace(0, 1, 11), edgecolor='k', color='red',
+                 linewidth=1.5)
         plt.xticks(np.linspace(0, 1, 11))
         plt.xlabel('Missing Fraction', size=14)
         plt.ylabel('Count of Features', size=14)
@@ -225,7 +227,7 @@ class FeatureSelector(object):
         self.identify_missing(selection_params['missing_threshold'])
         self.identify_single_unique()
         self.identify_collinear(selection_params['correlation_threshold'])
-        # self.identify_weakest_features(selection_params['target'], selection_params['number_features'])
+        # self.identify_weakest_features(selection_params['features_to_drop'])
 
         # Find the number of features identified to drop
         self.all_identified = set(list(chain(*list(self.ops.values()))))
