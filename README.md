@@ -9,6 +9,10 @@ This repo contains helper functions for experimenting with machine learning mode
 
 One hot encodes categorical variables.
 
+>>RemoveOutliers.py
+
+Class for identifying outliers in data, and removal of outliers.
+
 >> FeatureSelector.py
 
 Class for performing feature selection for machine learning models or data preprocessing.
